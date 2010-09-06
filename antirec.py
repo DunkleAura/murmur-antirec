@@ -11,9 +11,12 @@ import Murmur
 
 AllowedToRec={} #Temporary list of users allowed to record.
 canallowrecording="canallowrecording" #Name of the group that is allowed to give others permission to record :)
-                                      #This group must be defined in the root channel.
-                                      #Only members in the root channel can allow recording.
-iceport=60000
+                                      #This group and the members must be defined in the root channel.
+iceport=6502
+
+#Entries in the context menu:
+msg_context_allow="Aufnahmeerlaubnis erteilen"
+msg_context_disallow="Aufnahmeerlaubnis zurückziehen"
 
 class MetaCallbackI(Murmur.MetaCallback):
     def started(self, s, current=None):
@@ -50,9 +53,17 @@ class ServerCallbackI(Murmur.ServerCallback):
 	
     def userConnected(self, p, current=None):
 	if (self.server.hasPermission(p.session, 0, Murmur.PermissionWrite)):
-	    print "Is a global admin"
-	    self.server.addContextCallback(p.session, "recallow", "Aufnahmeerlaubnis erteilen", self.contextR, Murmur.ContextUser)
-	    self.server.addContextCallback(p.session, "recdisallow", "Aufnahmeerlaubnis zurückziehen", self.contextR, Murmur.ContextUser)
+	      #Check if user is in group canallowrecording defined in the root channel.
+	      ACL=self.server.getACL(0)
+	      #ACL[0] = ACL
+	      #ACL[1] = Groups
+	      #ACL[2] = inherit
+	      for gruppe in ACL[1]:
+		  if (gruppe.name == canallowrecording):
+		      if (p.userid in gruppe.members):
+			  self.server.addContextCallback(p.session, "recallow", msg_context_allow, self.contextR, Murmur.ContextUser)
+			  self.server.addContextCallback(p.session, "recdisallow", msg_context_disallow, self.contextR, Murmur.ContextUser)
+		  	  break
 
     def userDisconnected(self, p, current=None):
       print "User disconnected"
@@ -92,18 +103,8 @@ class ServerContextCallbackI(Murmur.ServerContextCallback):
       if (action == "recallow") and not (p.session == session):
 	  UserState=self.server.getState(session)
 	      
-	  #Check if user is in group canallowrecording.
-	  ACL=self.server.getACL(0)
-	  #ACL[0] = ACL
-	  #ACL[1] = Groups
-	  #ACL[2] = inherit
-	  for gruppe in ACL[1]:
-	      if (gruppe.name == canallowrecording):
-		  if (p.userid in gruppe.members):
-		      AllowedToRec[session] = p.channel #Add entry of sessionid and channelid to our dictionary.
-		      self.server.sendMessageChannel(UserState.channel,0, "<font style='color:green;font-weight:none;'>Der Benutzer \"%s\" hat von \"%s\" die Erlaubnis bekommen aufzunehmen.</font>" % (UserState.name, p.name))
-		      #print "User is in group %s." % canallowrecording
-		      break
+	  AllowedToRec[session] = p.channel #Add entry of sessionid and channelid to our dictionary.
+	  self.server.sendMessageChannel(UserState.channel,0, "<font style='color:green;font-weight:none;'>Der Benutzer \"%s\" hat von \"%s\" die Erlaubnis bekommen aufzunehmen.</font>" % (UserState.name, p.name))
       else:
 	  UserState=self.server.getState(session)
 	  self.server.sendMessage(UserState.session, "<font style='color:red;font-weight:none;'>Nur ein anderer Administrator kann dir eine Aufnahmeerlaubnis erteilen :)</font>") 
