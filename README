@@ -1,1 +1,7 @@
 Description: http://wiki.natenom.name/mumble/tools/antirecord
+
+Change
+canallowrecording="canallowrecording"
+to the group name you want to allow to give recording permission to other users.
+
+Change the iceport.

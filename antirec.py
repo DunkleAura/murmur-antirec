@@ -11,6 +11,7 @@ import Murmur
 
 AllowedToRec={} #Temporary list of users allowed to record.
 canallowrecording="canallowrecording" #Name of the group that is allowed to give others permission to record :)
+iceport=6502
 
 class MetaCallbackI(Murmur.MetaCallback):
     def started(self, s, current=None):
@@ -122,7 +123,7 @@ if __name__ == "__main__":
     # If icesecret is set, we need to set it here as well.
     ice.getImplicitContext().put("secret", "heidebubu")
 
-    meta = Murmur.MetaPrx.checkedCast(ice.stringToProxy('Meta:tcp -h 127.0.0.1 -p 60000'))
+    meta = Murmur.MetaPrx.checkedCast(ice.stringToProxy('Meta:tcp -h 127.0.0.1 -p %s' % iceport))
     adapter = ice.createObjectAdapterWithEndpoints("Callback.Client", "tcp -h 127.0.0.1")
     
     metaR=Murmur.MetaCallbackPrx.uncheckedCast(adapter.addWithUUID(MetaCallbackI()))
