@@ -2,14 +2,15 @@
 # -*- coding: utf-8
 
 # Copyright (c) 2010, Natenom / Natenom@googlemail.com
-# Version: 0.0.2
-# 2010-09-02
+# Version: 0.0.3
+# 2010-09-07
 
 import Ice, sys
 Ice.loadSlice("--all -I/usr/share/slice /usr/share/slice/Murmur.ice")
 import Murmur
 
-AllowedToRec=[] #Liste der Benutzer die aufnehmen duerfen.
+AllowedToRec={} #Temporary list of users allowed to record.
+canallowrecording="canallowrecording" #Name of the group that is allowed to give others permission to record :)
 
 class MetaCallbackI(Murmur.MetaCallback):
     def started(self, s, current=None):
@@ -30,12 +31,19 @@ class ServerCallbackI(Murmur.ServerCallback):
         global AllowedToRec
         UserState=self.server.getState(p.session)
         
-        if (UserState.recording==True) and (UserState.deaf==False) and not (p.session in AllowedToRec):
+        #Check if user is allowed to record.
+        if (UserState.recording==True) and (UserState.deaf==False) and not (p.session in AllowedToRec): #and not (p.channel == AllowedToRec[p.session]):
 	    UserState.deaf=True
 	    self.server.setState(UserState)
-	    
-	    msg="<font style='color:red;background:yellow;'>User \"%s\" has been deafened because he started recording.</font>" % ( UserState.name )
+
+	    msg="<font style='color:red;background:yellow;'>User \"%s\" has been deafened because he started recording.</font>" % (UserState.name)
 	    self.server.sendMessageChannel(UserState.channel, 0, msg)
+
+	    #Callback is not implemented... if a user switches a channel :(
+	    #if (p.channel == AllowedToRec[p.session]):
+		#print "Erlaubnis gilt nur für KanalID %s, deshalb wurde sie entzogen" % AllowedToRec[p.session]
+		##Deaf him and beat him...
+	    #else:
 	
     def userConnected(self, p, current=None):
 	if (self.server.hasPermission(p.session, 0, Murmur.PermissionWrite)):
@@ -44,7 +52,7 @@ class ServerCallbackI(Murmur.ServerCallback):
 	    self.server.addContextCallback(p.session, "recdisallow", "Aufnahmeerlaubnis zurückziehen", self.contextR, Murmur.ContextUser)
 
     def userDisconnected(self, p, current=None):
-	    print "User disconnected"
+      print "User disconnected"
 	    
     def channelCreated(self, c, current=None):
       print "created"
@@ -66,7 +74,9 @@ class ServerContextCallbackI(Murmur.ServerContextCallback):
       if (action == "recdisallow"):
 	  UserState=self.server.getState(session) #Remove the user from AllowedToRec.
 	  try:
-	      AllowedToRec.remove(session)
+	      #AllowedToRec.remove(session)
+	      #AllowedToRec[session] = p.channel #Add entry of sessionid and channelid to our dictionary.
+	      del AllowedToRec[session]
 	      self.server.sendMessageChannel(UserState.channel,0, "<font style='color:red;font-weight:none;'>Die Aufnahmeerlaubnis des Benutzers \"%s\" wurde durch \"%s\" entzogen.</font>" % (UserState.name, p.name))
 	      
 	      if (UserState.recording == True): #If User is still recording deaf him.
@@ -74,13 +84,26 @@ class ServerContextCallbackI(Murmur.ServerContextCallback):
 		  self.server.setState(UserState)
 	  except:
 	      print "Could not delete %s, not in List." % (session)
-
-      if (action == "recallow"):
+      
+      #Do not allow Admins to permit themselfs to record.
+      if (action == "recallow") and not (p.session == session):
 	  UserState=self.server.getState(session)
-
-	  AllowedToRec.append(session) #Add to List of recorders.
-	  self.server.sendMessageChannel(UserState.channel,0, "<font style='color:green;font-weight:none;'>Der Benutzer \"%s\" hat von \"%s\" die Erlaubnis bekommen aufzunehmen.</font>" % (UserState.name, p.name))
-        
+	      
+	  #Check if user is in group canallowrecording.
+	  ACL=self.server.getACL(p.channel)
+	  #ACL[0] = ACL
+	  #ACL[1] = Groups
+	  #ACL[2] = inherit
+	  for gruppe in ACL[1]:
+	      if (gruppe.name == canallowrecording):
+		  if (p.userid in gruppe.members):
+		      AllowedToRec[session] = p.channel #Add entry of sessionid and channelid to our dictionary.
+		      self.server.sendMessageChannel(UserState.channel,0, "<font style='color:green;font-weight:none;'>Der Benutzer \"%s\" hat von \"%s\" die Erlaubnis bekommen aufzunehmen.</font>" % (UserState.name, p.name))
+		      #print "User is in group %s." % canallowrecording
+		      break
+      else:
+	  UserState=self.server.getState(session)
+	  self.server.sendMessage(UserState.session, "<font style='color:red;font-weight:none;'>Nur ein anderer Administrator kann dir eine Aufnahmeerlaubnis erteilen :)</font>") 
 
 
 if __name__ == "__main__":
