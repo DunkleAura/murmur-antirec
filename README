@@ -1,7 +1,17 @@
-Description: http://wiki.natenom.name/mumble/tools/antirecord
+Features of antirec.py:
+  * Members of the group defined in "canallowrecording" can allow other users to record.
+  * An admin can't grant himself permission to record. Only another admin can do that.
+  * If a user gets the permission to record a short notice will be send to the channel.
+  * If the permission to record is revoked the user is being deafend instantly if he is still recording.
+  * The permission is bound to the session ID; if the users disconnects the permission is gone.
 
-Change
-canallowrecording="canallowrecording"
-to the group name you want to allow to give recording permission to other users.
+If you don't need these features, please use the antirec_legacy.py; users just get deafend when starting to record.
 
-Change the iceport.
+Change...:
+  canallowrecording="canallowrecording"
+  to the group name you want to allow to give recording permission to other users.
+
+  iceport
+
+
+Website: http://wiki.natenom.name/mumble/tools/antirecord
