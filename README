@@ -1,20 +1,27 @@
 Features of antirec.py:
   * Members of the group defined in "canallowrecording" can allow other users
     to record (membership must be defined in the root channel).
-  * An admin can't grant himself permission to record. Only another admin can do that.
+  * An admin can't grant himself permission to record. Only another admin can do that (can be changed in settings).
   * If a user gets the permission to record a short notice will be send to the channel.
   * If the permission to record is revoked the user is being deafend instantly if he is still recording.
   * The permission is bound to the session ID; if the users disconnects the permission is gone.
+  * Punishment can be KICK or DEAF :)
 
 The advantage of an own group to give recording permission to other users is that
  you don't need to permit admin access to the whole server :)
 
 If you don't need these features, please use the antirec_legacy.py; users just get deafend when starting to record.
 
-Change...:
-  canallowrecording="canallowrecording"
-  to the group name you want to allow to give recording permission to other users.
+Settings:
+    canallowrecording="allowrecord" #Name of the group that is allowed to give others permission to record :)
+				    # This group and its members must be defined in the root channel.
+    iceport=60000
 
-  iceport
+    #Entries in the context menu:
+    msg_context_allow="Aufnahmeerlaubnis erteilen"
+    msg_context_disallow="Aufnahmeerlaubnis zurückziehen"
+
+    PUNISHMENT="DEAF" #Punishment for users that try to record :P" Can be "DEAF" or "KICK".
+    ADMINALLOWSELF=False #Don't allow members of the group canallowrecording to permit themselfs to record.  
 
 Website: http://wiki.natenom.name/mumble/tools/antirecord
